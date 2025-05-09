@@ -48,7 +48,7 @@ Consider the following aspects during refactoring:
     ```
 5.  View the application in your browser (usually `http://localhost:3000`)
 
-The `index.vue` file simply renders the `TaskListComponent`. Focus your refactoring efforts on `TaskListComponent.vue` and `stores/tasks.ts`.
+The `index.vue` file simply renders the `TaskList`. Focus your refactoring efforts on `TaskList.vue` and `stores/tasks.ts`.
 
 ## Submission
 
