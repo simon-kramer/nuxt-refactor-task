@@ -7,54 +7,66 @@ interface Task {
   completed: boolean;
 }
 
-interface TaskState {
-  tasks: Task[];
-  loading: boolean;
-  error: Error | null;
-}
+type TaskStatus = { type: 'changing' | 'loaded' } | { type: 'error'; error: Error };
+interface TaskStatusMap { [key: number]: TaskStatus }
 
-export const useTaskStore = defineStore('tasks', {
-  state: (): TaskState => ({
-    tasks: [],
-    loading: false,
-    error: null,
-  }),
+export const useTasksStore = defineStore('tasks', () => {
+  const tasks = ref<Task[]>([]);
+  const syncTaskStatusMap = ref<TaskStatusMap>({});
+  const loading = ref<boolean>(false);
+  const error = ref<Error | null>(null);
 
-  getters: {},
+  async function fetchTasks() {
+    loading.value = true;
+    error.value = null;
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const mockTasks: Task[] = [
+        { id: 1, title: 'Buy groceries', description: 'Milk, Bread, Cheese', completed: false },
+        { id: 2, title: 'Walk the dog', description: 'Morning walk', completed: true },
+        { id: 3, title: 'Read a book', description: 'Finish Chapter 5', completed: false },
+        { id: 4, title: 'Start that amazing project you always wanted to start', description: 'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.', completed: false },
+      ];
+      tasks.value = mockTasks;
+      syncTaskStatusMap.value = mockTasks.reduce((acc, task) => {
+        acc[task.id] = { type: 'loaded' };
+        return acc;
+      }, {} as TaskStatusMap);
+    }
+    catch (err) {
+      console.error('Failed to fetch tasks:', err);
+      error.value = err as Error;
+    }
+    finally {
+      loading.value = false;
+    }
+  }
 
-  actions: {
-    async fetchTasks() {
-      this.loading = true;
-      this.error = null;
-      try {
-        await new Promise(resolve => setTimeout(resolve, 50ob));
-        const mockTasks: Task[] = [
-          { id: 1, title: 'Buy groceries', description: 'Milk, Bread, Cheese', completed: false },
-          { id: 2, title: 'Walk the dog', description: 'Morning walk', completed: true },
-          { id: 3, title: 'Read a book', description: 'Finish Chapter 5', completed: false },
-        ];
-        this.tasks = mockTasks;
-      } catch (err) {
-        this.error = err as Error;
-        console.error('Failed to fetch tasks:', err);
-        throw err; 
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async toggleTaskCompletion(taskId: number) {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        const taskIndex = this.tasks.findIndex(task => task.id === taskId);
-        if (taskIndex !== -1) {
-          this.tasks[taskIndex].completed = !this.tasks[taskIndex].completed;
+  async function toggleTaskCompletion(taskId: number) {
+    syncTaskStatusMap.value[taskId] = { type: 'changing' };
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const taskIndex = tasks.value.findIndex(task => task.id === taskId);
+      if (taskIndex !== -1) {
+        if (taskId === 4) {
+          throw new Error('Simulated error for task 4');
         }
-      } catch (err) {
-        console.error(`Failed to toggle task ${taskId}:`, err);
-        throw err;
+        tasks.value[taskIndex].completed = !tasks.value[taskIndex].completed;
       }
-    },
-  },
+      syncTaskStatusMap.value[taskId] = { type: 'loaded' };
+    }
+    catch (err) {
+      console.error(`Failed to toggle task ${taskId}:`, err);
+      syncTaskStatusMap.value[taskId] = { type: 'error', error: err as Error };
+    }
+  }
+
+  return {
+    tasks,
+    loading,
+    error,
+    syncTaskStatusMap,
+    fetchTasks,
+    toggleTaskCompletion,
+  };
 });
