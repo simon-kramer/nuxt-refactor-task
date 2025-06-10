@@ -3,7 +3,7 @@ import TaskListComponent from '~/components/TaskList.vue';
 </script>
 
 <template>
-    <div>
-      <TaskListComponent />
-    </div>
+  <div>
+    <TaskListComponent />
+  </div>
 </template>
